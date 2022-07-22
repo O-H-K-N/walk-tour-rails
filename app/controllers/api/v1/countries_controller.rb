@@ -3,22 +3,28 @@ class Api::V1::CountriesController < ApiController
   def index
     iso = []
     areas = []
+    areas_name = []
     countries = Country.all
-    if params[:flag] == 'areas_name'
-      # DB内の全ての国名を返す
-      countries.each do |country|
-        areas << country.name
+    countries.each do |country|
+      # 地点を一つでも含んだ国のみを取得
+      if country.spots.present?
+        iso << country.iso.downcase
+        areas << country
       end
-      render json: {areas: areas }
+      # DB内にあるすべての国の名前を取得
+      areas_name << country.name
+    end
+    render json: {areas: areas, iso: iso, areas_name: areas_name }
+  end
+
+  # 国IDから国に関する地点情報を取得
+  def show
+    country = Country.find(params[:id])
+    spots = country.spots
+    if spots.present?
+      render json: { area: country, spots: spots }
     else
-      # 地点を一つでも含んだ国のみを返す
-      countries.each do |country|
-        if country.spots.present?
-          iso << country.iso.downcase
-          areas << country
-        end
-      end
-      render json: {areas: areas, iso: iso }
+      render json: country, status: :bad_request
     end
   end
 
